@@ -5,7 +5,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-abstract class UDPSocket {
+public abstract class UDPSocket {
 
     private UDPServerSocket server;
     private UDPKey key;
