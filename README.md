@@ -17,7 +17,7 @@ UDPServerSocket server = new UDPServerSocket(port);
 
 **Creating a socket from server**
 ```Java
-InetAddress address = InetAddress.getLocalHost(); //TO ADDRESS
+InetAddress address = InetAddress.getByName("localhost"); //TO ADDRESS
 int port = 8080; //TO PORT
 UDPSocket socket = server.create(address, port);
 ```
@@ -35,6 +35,12 @@ server.addUDPListener(new UDPServerSocket.UDPListener(){
 ```Java
 server.close(); //CLOSES THE SERVER
 socket.close(); //CLOSE THE SOCKET - WONT CLOSE THE SERVER
+```
+
+**Set SafeMode - ACK**
+This will ensure all packets arrive at the destination in order.
+```Java
+server.setSafeMode(true);
 ```
 
 
