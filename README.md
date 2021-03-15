@@ -19,7 +19,7 @@ UDPServerSocket server = new UDPServerSocket(port);
 ```Java
 InetAddress address = InetAddress.getLocalHost(); //TO ADDRESS
 int port = 8080; //TO PORT
-UDPSocket socket = socket.create(address, port);
+UDPSocket socket = server.create(address, port);
 ```
 
 **Receiving socket from server**
