@@ -151,5 +151,5 @@ public abstract class UDPSocket {
         }
     }
 
-    abstract void close();
+    public abstract void close();
 }
