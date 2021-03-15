@@ -5,37 +5,39 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 
-public class UDPSocket {
+abstract class UDPSocket {
 
     private UDPServerSocket server;
+    private UDPKey key;
     private UDPInputStream in;
     private UDPOutputStream out;
-    private InetAddress address;
-    private int port;
-    private int key;
+    private boolean safeMode;
+    private int inOrder = 0, timeout = 5000;
+    private DatagramPacket lastPacket;
 
-    public UDPSocket(UDPServerSocket server, int key, InetAddress address, int port)throws IOException {
+    public UDPSocket(UDPServerSocket server, UDPKey key, boolean safeMode)throws IOException {
         this.server = server;
         this.key = key;
-        this.address = address;
-        this.port = port;
+        this.safeMode = safeMode;
 
-        in = new UDPInputStream();
-        out = new UDPOutputStream(this);
+        in = new UDPInputStream(this);
+        out = new UDPOutputStream(this, key.getKey());
     }
 
-    public UDPSocket(UDPServerSocket server, DatagramPacket packet)throws IOException {
-        this.server = server;
-        address = packet.getAddress();
-        port = packet.getPort();
-        key = (((packet.getData()[packet.getOffset()] & 0xff) << 24) |
-                ((packet.getData()[packet.getOffset()+1] & 0xff) << 16) |
-                ((packet.getData()[packet.getOffset()+2] & 0xff) << 8) |
-                (packet.getData()[packet.getOffset()+3] & 0xff));
+    public boolean isSafeMode(){
+        return safeMode;
+    }
 
-        in = new UDPInputStream();
-        in.append(packet.getData(), packet.getOffset()+4, packet.getLength()-4);
-        out = new UDPOutputStream(this);
+    public InetAddress getAddress(){
+        return key.getAddress();
+    }
+
+    public int getPort(){
+        return key.getPort();
+    }
+
+    public DatagramSocket getServer(){
+        return server.getServer();
     }
 
     public UDPInputStream getInputStream(){
@@ -46,23 +48,108 @@ public class UDPSocket {
         return out;
     }
 
-    public DatagramSocket getServer(){
-        return server.getServer();
+    public boolean isInputStreamShutdown(){
+        return out.isClosed();
     }
 
-    public int getKey(){
-        return key;
+    public boolean isOutputStreamShutdown(){
+        return in.isClosed();
     }
 
-    public InetAddress getAddress(){
-        return address;
+    public void setTimeout(int timeout){
+        this.timeout = timeout;
     }
 
-    public int getPort(){
-        return port;
+    public int getTimeout(){
+        return timeout;
     }
 
-    public void close(){
-        server.close(key+":"+address.getHostAddress()+":"+port);
+    public void receive(byte[] buf)throws IOException {
+        receive(buf, 0, buf.length);
     }
+
+    public void receive(byte[] buf, int off, int len)throws IOException {
+        if(!in.isClosed()){
+            if(safeMode){
+                byte ack = buf[off];
+
+                switch(ack){
+                    case 0x00: //SUCCESSFUL ACKNOWLEDGMENT
+                        out.setAckReady();
+                        break;
+
+                    case 0x01: //FAILURE ACKNOWLEDGMENT
+                        send(lastPacket);
+                        break;
+
+                    case 0x02: //PACKET TO BE RECEIVED
+                        int pos = (((buf[off+1] & 0xff) << 24) |
+                                ((buf[off+2] & 0xff) << 16) |
+                                ((buf[off+3] & 0xff) << 8) |
+                                (buf[off+4] & 0xff));
+
+                        if(inOrder == pos){
+                            in.append(buf, off+5, len-5);
+                            inOrder++;
+                            sendSuccessAcknowledgment();
+
+                        }else{
+                            sendFailureAcknowledgment();
+                        }
+
+                        break;
+                }
+
+            }else{
+                in.append(buf, off, len);
+            }
+        }
+    }
+
+    public void send(DatagramPacket packet)throws IOException {
+        if(!out.isClosed()){
+            lastPacket = packet;
+            server.getServer().send(packet);
+        }
+    }
+
+    private void sendSuccessAcknowledgment()throws IOException {
+        if(!out.isClosed()){
+            byte[] b = new byte[]{
+                    (byte) (0xff & (key.getKey() >> 24)),
+                    (byte) (0xff & (key.getKey() >> 16)),
+                    (byte) (0xff & (key.getKey() >> 8)),
+                    (byte) (0xff & key.getKey()),
+                    0x00
+            };
+            server.getServer().send(new DatagramPacket(b, b.length, key.getAddress(), key.getPort()));
+        }
+    }
+
+    private void sendFailureAcknowledgment()throws IOException {
+        if(!out.isClosed()){
+            byte[] b = new byte[]{
+                    (byte) (0xff & (key.getKey() >> 24)),
+                    (byte) (0xff & (key.getKey() >> 16)),
+                    (byte) (0xff & (key.getKey() >> 8)),
+                    (byte) (0xff & key.getKey()),
+                    0x01
+            };
+            server.getServer().send(new DatagramPacket(b, b.length, key.getAddress(), key.getPort()));
+        }
+    }
+
+    public void shutdownInputStream()throws IOException {
+        if(!in.isClosed()){
+            in.close();
+        }
+    }
+
+    public void shutdownOutputStream()throws IOException {
+        if(!in.isClosed()){
+            out.close();
+        }
+    }
+
+    abstract void close();
 }

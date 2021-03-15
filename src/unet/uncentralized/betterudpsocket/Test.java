@@ -1,6 +1,6 @@
 package unet.uncentralized.betterudpsocket;
 
-import java.io.InputStream;
+import java.io.DataInputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 
@@ -8,19 +8,25 @@ public class Test {
 
     public static void main(String[] args)throws Exception {
         UDPServerSocket server = new UDPServerSocket(8080);
+        server.setSafeMode(true);
         server.addUDPListener(new UDPServerSocket.UDPListener(){
             @Override
             public void accept(UDPSocket socket){
-                new Thread(new Runnable() {
+                new Thread(new Runnable(){
                     @Override
-                    public void run() {
+                    public void run(){
                         try{
-                            InputStream in = socket.getInputStream();
+                            DataInputStream in = new DataInputStream(socket.getInputStream());
 
-                            byte[] b = new byte[4096];
+                            System.out.println(in.readByte());
+
+                            byte[] b = new byte[26];
                             int l = in.read(b);
 
                             System.out.println(new String(b, 0, l));
+
+
+                            System.out.println(in.readByte());
 
                         }catch(Exception e){
                             e.printStackTrace();
@@ -31,14 +37,21 @@ public class Test {
             }
         });
 
-        Thread.sleep(1000);
+        //Thread.sleep(1000);
 
 
         UDPServerSocket socket = new UDPServerSocket(8081);
+        socket.setSafeMode(true);
 
-        UDPSocket s = socket.create(InetAddress.getLocalHost(), 8080);
+        UDPSocket s = socket.create(InetAddress.getByName("192.168.0.130"), 8080);
         OutputStream o = s.getOutputStream();
+        o.write(0xcc);
+        o.flush();
+
         o.write("ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes());
+        o.flush();
+
+        o.write(0xcc);
         o.flush();
 
         s.close();
@@ -46,7 +59,6 @@ public class Test {
         Thread.sleep(1000);
 
         socket.close();
-
         server.close();
     }
 }

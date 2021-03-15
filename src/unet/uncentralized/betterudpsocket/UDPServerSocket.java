@@ -10,11 +10,14 @@ import java.util.HashMap;
 
 public class UDPServerSocket {
 
+    private int port;
     private DatagramSocket server;
     private ArrayList<UDPListener> listeners = new ArrayList<>();
-    private HashMap<String, UDPSocket> sessions = new HashMap<>();
+    private HashMap<String, UDPSocket> sockets = new HashMap<>();
+    private boolean safeMode;
 
     public UDPServerSocket(int port)throws SocketException {
+        this.port = port;
         server = new DatagramSocket(port);
 
         new Thread(new Runnable(){
@@ -25,22 +28,27 @@ public class UDPServerSocket {
                         DatagramPacket packet = new DatagramPacket(new byte[65535], 65535);
                         server.receive(packet);
 
-                        String key = (((packet.getData()[packet.getOffset()] & 0xff) << 24) |
+                        int id = (((packet.getData()[packet.getOffset()] & 0xff) << 24) |
                                 ((packet.getData()[packet.getOffset()+1] & 0xff) << 16) |
                                 ((packet.getData()[packet.getOffset()+2] & 0xff) << 8) |
-                                (packet.getData()[packet.getOffset()+3] & 0xff))+":"+packet.getAddress().getHostAddress()+":"+packet.getPort();
+                                (packet.getData()[packet.getOffset()+3] & 0xff));
 
-                        if(sessions.containsKey(key)){
-                            sessions.get(key).getInputStream().append(packet.getData(), packet.getOffset()+4, packet.getLength()-4);
+                        UDPKey key = new UDPKey(id, packet.getAddress(), packet.getPort());
+
+                        if(sockets.containsKey(key.hash())){
+                            sockets.get(key.hash()).receive(packet.getData(), packet.getOffset()+4, packet.getLength()-4);
 
                         }else{
-                            for(UDPListener listener : listeners){
-                                UDPSocket socket = new UDPSocket(UDPServerSocket.this, packet);
-                                sessions.put(key, socket);
-                                listener.accept(socket);
+                            UDPSocket socket = create(key);
+                            sockets.get(key.hash()).receive(packet.getData(), packet.getOffset()+4, packet.getLength()-4);
+
+                            if(listeners.size() > 0){
+                                for(UDPListener listener : listeners){
+                                    listener.accept(socket);
+                                }
                             }
                         }
-                    }catch(Exception e){
+                    }catch(IOException e){
                         //e.printStackTrace();
                     }
                 }
@@ -48,16 +56,40 @@ public class UDPServerSocket {
         }).start();
     }
 
+    public void setSafeMode(boolean safeMode){
+        this.safeMode = safeMode;
+    }
+
     public UDPSocket create(InetAddress address, int port)throws IOException {
-        int key;
-        for(key = 0; key < 1000; key++){
-            if(!sessions.containsKey(key+":"+address.getHostAddress()+":"+port)){
+        UDPKey key = new UDPKey(0, address, port);
+
+        for(int i = 0; i < 1000; i++){
+            key.setKey(i);
+            if(!sockets.containsKey(key.hash())){
                 break;
             }
         }
 
-        UDPSocket socket = new UDPSocket(UDPServerSocket.this, key, address, port);
-        sessions.put(key+":"+address.getHostAddress()+":"+port, socket);
+        return create(key);
+    }
+
+    private UDPSocket create(UDPKey key)throws IOException {
+        UDPSocket socket = new UDPSocket(this, key, safeMode){
+            @Override
+            public void close(){
+                if(sockets.containsKey(key.hash())){
+                    sockets.remove(key.hash());
+
+                    try{
+                        shutdownInputStream();
+                        shutdownOutputStream();
+                    }catch(IOException e){
+                    }
+                }
+            }
+        };
+
+        sockets.put(key.hash(), socket);
         return socket;
     }
 
@@ -67,16 +99,6 @@ public class UDPServerSocket {
 
     public void close(){
         server.close();
-    }
-
-    public void close(String key){
-        if(sessions.containsKey(key)){
-            sessions.remove(key);
-        }
-    }
-
-    public int sessionSize(){
-        return sessions.size();
     }
 
     public UDPListener addUDPListener(UDPListener listener){

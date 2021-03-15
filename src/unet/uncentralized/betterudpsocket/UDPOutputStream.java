@@ -1,6 +1,5 @@
 package unet.uncentralized.betterudpsocket;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
@@ -8,118 +7,101 @@ import java.net.DatagramPacket;
 public class UDPOutputStream extends OutputStream {
 
     private UDPSocket socket;
-    private int max = 65535;
-    private ByteArrayOutputStream out = new ByteArrayOutputStream(max);
+    private int key, order = 0;
+    private ByteBuffer buffer = new ByteBuffer(65535);
+    private boolean closed, ackReady = true;
 
-    public UDPOutputStream(UDPSocket socket)throws IOException {
+    public UDPOutputStream(UDPSocket socket, int key)throws IOException {
         this.socket = socket;
+        this.key = key;
         writeKey();
     }
 
     @Override
     public synchronized void write(int b)throws IOException {
-        byte[] buff = { (byte)b };
-        write(buff, 0, buff.length);
+        byte[] buf = { (byte)b };
+        write(buf, 0, buf.length);
     }
 
     @Override
-    public synchronized void write(byte[] b)throws IOException {
-        write(b, 0, b.length);
+    public synchronized void write(byte[] buf)throws IOException {
+        write(buf, 0, buf.length);
     }
 
     @Override
-    public synchronized void write(byte[] b, int off, int len)throws IOException {
-        if(len+out.size() > max){
-            while(len > max-out.size()){
-                out.write(b, off, max-out.size());
-                flush();
-                off += max-out.size();
-                len -= max-out.size();
+    public synchronized void write(byte[] buf, int off, int len)throws IOException {
+        if(!closed){
+            if(buffer.getLength()+len >= buffer.getCapacity()){
+                while(len > buffer.getRemaining()){
+                    buffer.put(buf, off, buffer.getRemaining());
+                    flush();
+                    off += buffer.getRemaining();
+                    len -= buffer.getRemaining();
+                }
+
+            }else{
+                buffer.put(buf, off, len);
             }
 
-            if(len > 0){
-                out.write(b, off, len);
-            }
         }else{
-            out.write(b, off, len);
+            throw new IOException("OutputStream is closed.");
         }
-
-        /*
-
-        if(off+len+out.size() > max){
-
-            System.out.println((off+len+out.size())+"  "+max+"  "+len+"  "+out.size()+"  "+((len+out.size())-max));
-
-            out.write(b, off, (len+out.size())-max);
-            flush();
-
-            write(b, off+(len-out.size()), len);
-
-            //int l = off+len+out.size()-65535;
-
-            //for()
-
-            /*
-            for(int i = 0; i < (off+len+out.size())/max; i++){
-                out.write(b, off+(i*max), max-out.size());
-                flush();
-                /*
-                out.write(new byte[]{
-                        (byte) (0xff & (socket.getKey() >> 24)),
-                        (byte) (0xff & (socket.getKey() >> 16)),
-                        (byte) (0xff & (socket.getKey() >> 8)),
-                        (byte) (0xff & socket.getKey()) });
-                        *./
-            }*./
-
-
-        }else{
-            out.write(b, off, len);
-        }
-
-        /*
-        if(buffer == null){
-            buffer = new byte[len];
-            System.arraycopy(b, off, buffer, 0, len);
-
-        }else{
-            byte[] result = new byte[len+buffer.length];
-            System.arraycopy(buffer, 0, result, 0, buffer.length);
-            System.arraycopy(b, off, result, buffer.length, len);
-            buffer = result;
-        }
-        */
     }
 
     private synchronized void writeKey()throws IOException {
-        out.write(new byte[]{
-                (byte) (0xff & (socket.getKey() >> 24)),
-                (byte) (0xff & (socket.getKey() >> 16)),
-                (byte) (0xff & (socket.getKey() >> 8)),
-                (byte) (0xff & socket.getKey()) });
+        if(!closed){
+            buffer.put(new byte[]{
+                    (byte) (0xff & (key >> 24)),
+                    (byte) (0xff & (key >> 16)),
+                    (byte) (0xff & (key >> 8)),
+                    (byte) (0xff & key) });
+
+            if(socket.isSafeMode()){
+                buffer.put(new byte[]{
+                        0x02,
+                        (byte) (0xff & (order >> 24)),
+                        (byte) (0xff & (order >> 16)),
+                        (byte) (0xff & (order >> 8)),
+                        (byte) (0xff & order)
+                });
+                order++;
+            }
+        }else{
+            throw new IOException("OutputStream is closed.");
+        }
+    }
+
+    public synchronized boolean isClosed(){
+        return closed;
+    }
+
+    public void setAckReady(){
+        ackReady = true;
     }
 
     @Override
-    public synchronized void flush()throws IOException {
-        DatagramPacket packet = new DatagramPacket(out.toByteArray(), out.size(), socket.getAddress(), socket.getPort());
-        socket.getServer().send(packet);
-        out.reset();
-        writeKey();
+    public void flush()throws IOException {
+        if(buffer.getLength() > 4){
+            if(socket.isSafeMode()){
+                long now = System.currentTimeMillis();
+                while(!ackReady){
+                    if(now+socket.getTimeout() <= System.currentTimeMillis()){
+                        closed = true;
+                        return;
+                    }
+                }
+                ackReady = false;
+            }
 
-        /*
-        if(buffer.length > 65531){
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, port);
-            server.send(packet);
+            byte[] b = new byte[buffer.getLength()];
+            buffer.get(b);
 
-            byte[] result = new byte[buffer.length-65535];
-            System.arraycopy(buffer, 65535, result, 0, result.length);
-            buffer = result;
-
-        }else{
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, port);
-            server.send(packet);
-            buffer = null;
+            socket.send(new DatagramPacket(b, b.length, socket.getAddress(), socket.getPort()));
+            writeKey();
         }
-        */
+    }
+
+    public synchronized void close(){
+        closed = true;
     }
 }

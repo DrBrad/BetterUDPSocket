@@ -1,84 +1,71 @@
 package unet.uncentralized.betterudpsocket;
 
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.Date;
 
 public class UDPInputStream extends InputStream {
 
-    private byte[] buffer;
-    private long timeout = 5000;
+    private UDPSocket socket;
+    private ByteBuffer buffer = new ByteBuffer(65535);
+    private boolean closed;
+
+    public UDPInputStream(UDPSocket socket){
+        this.socket = socket;
+    }
 
     @Override
-    public synchronized int read(){
-        if(buffer.length > 0){
-            int i = buffer[0]&0xff;
-            depend(0, 1);
-            return i;
+    public synchronized int read()throws IOException {
+        byte[] buf = new byte[1];
+        int len = read(buf, 0, 1);
+        if(len > 0){
+            return buf[0]&0xff;
         }
-        return 0;
+        return -1;
     }
 
     @Override
-    public synchronized int read(byte[] b){
-        return read(b, 0, b.length);
+    public synchronized int read(byte[] buf)throws IOException {
+        return read(buf, 0, buf.length);
     }
 
     @Override
-    public synchronized int read(byte[] b, int off, int len){
-        if(buffer == null || off > buffer.length){
-            //WAIT
-            long now = new Date().getTime();
-            while(buffer == null || off > buffer.length){
-                if(now+timeout <= new Date().getTime()){
-                    return 0;
-                }
-                try{
-                    Thread.sleep(10);
-                }catch(InterruptedException e){
+    public synchronized int read(byte[] buf, int off, int len)throws IOException {
+        if(!closed){
+            if(buffer.getLength() < 0){
+                long now = System.currentTimeMillis();
+                while(buffer.getLength() < 1){
+                    if(now+socket.getTimeout() <= System.currentTimeMillis()){
+                        return 0;
+                    }
                 }
             }
+
+            buffer.get(buf, off, len);
+
+            return len;
+        }else{
+            throw new IOException("InputStream is closed.");
         }
-
-        len = (len > buffer.length) ? buffer.length : len;
-        System.arraycopy(buffer, off, b, 0, len);
-        depend(off, len);
-
-        return len;
     }
 
     @Override
     public synchronized int available(){
-        return buffer.length;
+        return buffer.getLength();
     }
 
-    public void setTimeout(long timeout){
-        this.timeout = timeout;
+    public synchronized void append(byte[] buf){
+        append(buf);
     }
 
-    public synchronized void append(byte[] b){
-        append(b, 0, b.length);
+    public synchronized void append(byte[] buf, int off, int len){
+        buffer.put(buf, off, len);
     }
 
-    public synchronized void append(byte[] b, int off, int len){
-        if(buffer == null){
-            buffer = new byte[len];
-            System.arraycopy(b, off, buffer, 0, len);
-
-        }else{
-            byte[] result = new byte[len+buffer.length];
-            System.arraycopy(buffer, 0, result, 0, buffer.length);
-            System.arraycopy(b, off, result, buffer.length, len);
-            buffer = result;
-        }
+    public synchronized boolean isClosed(){
+        return closed;
     }
 
-    private synchronized void depend(int off, int len){
-        if(buffer.length-(len+off) > 0){
-            byte[] result = new byte[buffer.length-(len+off)];
-            System.arraycopy(buffer, (len+off), result, 0, result.length);
-            buffer = result;
-        }else{
-            buffer = null;
-        }
+    public synchronized void close(){
+        closed = true;
     }
 }
