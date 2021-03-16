@@ -11,7 +11,7 @@ public abstract class UDPSocket {
     private UDPKey key;
     private UDPInputStream in;
     private UDPOutputStream out;
-    private boolean safeMode;
+    private boolean safeMode, keepAlive, noDelay;
     private int inOrder = 0, timeout = 5000;
     private DatagramPacket lastPacket;
 
@@ -21,11 +21,31 @@ public abstract class UDPSocket {
         this.safeMode = safeMode;
 
         in = new UDPInputStream(this);
-        out = new UDPOutputStream(this, key.getKey());
+        out = new UDPOutputStream(this);
     }
 
     public boolean isSafeMode(){
         return safeMode;
+    }
+
+    public boolean isKeepAlive(){
+        return keepAlive;
+    }
+
+    public void setKeepAlive(boolean keepAlive){
+        this.keepAlive = keepAlive;
+    }
+
+    public boolean isNoDelay(){
+        return noDelay;
+    }
+
+    public void setNoDelay(boolean noDelay){
+        this.noDelay = noDelay;
+    }
+
+    public UDPKey getKey(){
+        return key;
     }
 
     public InetAddress getAddress(){
@@ -70,19 +90,11 @@ public abstract class UDPSocket {
 
     public void receive(byte[] buf, int off, int len)throws IOException {
         if(!in.isClosed()){
-            if(safeMode){
-                byte ack = buf[off];
+            byte ack = buf[off];
 
-                switch(ack){
-                    case 0x00: //SUCCESSFUL ACKNOWLEDGMENT
-                        out.setAckReady();
-                        break;
-
-                    case 0x01: //FAILURE ACKNOWLEDGMENT
-                        send(lastPacket);
-                        break;
-
-                    case 0x02: //PACKET TO BE RECEIVED
+            switch(ack){
+                case 0x00: //PACKET TO BE RECEIVED
+                    if(safeMode){
                         int pos = (((buf[off+1] & 0xff) << 24) |
                                 ((buf[off+2] & 0xff) << 16) |
                                 ((buf[off+3] & 0xff) << 8) |
@@ -96,12 +108,21 @@ public abstract class UDPSocket {
                         }else{
                             sendFailureAcknowledgment();
                         }
+                    }else{
+                        in.append(buf, off+1, len-1);
+                    }
+                    break;
 
-                        break;
-                }
+                case 0x01: //KEEP ALIVE
+                    break;
 
-            }else{
-                in.append(buf, off, len);
+                case 0x02: //SUCCESSFUL ACKNOWLEDGMENT
+                    out.setAckReady();
+                    break;
+
+                case 0x03: //FAILURE ACKNOWLEDGMENT
+                    send(lastPacket);
+                    break;
             }
         }
     }
@@ -120,7 +141,7 @@ public abstract class UDPSocket {
                     (byte) (0xff & (key.getKey() >> 16)),
                     (byte) (0xff & (key.getKey() >> 8)),
                     (byte) (0xff & key.getKey()),
-                    0x00
+                    0x02
             };
             server.getServer().send(new DatagramPacket(b, b.length, key.getAddress(), key.getPort()));
         }
@@ -133,7 +154,7 @@ public abstract class UDPSocket {
                     (byte) (0xff & (key.getKey() >> 16)),
                     (byte) (0xff & (key.getKey() >> 8)),
                     (byte) (0xff & key.getKey()),
-                    0x01
+                    0x03
             };
             server.getServer().send(new DatagramPacket(b, b.length, key.getAddress(), key.getPort()));
         }

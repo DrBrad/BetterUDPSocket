@@ -14,7 +14,7 @@ public class UDPInputStream extends InputStream {
     }
 
     @Override
-    public synchronized int read()throws IOException {
+    public int read()throws IOException {
         byte[] buf = new byte[1];
         int len = read(buf, 0, 1);
         if(len > 0){
@@ -24,14 +24,14 @@ public class UDPInputStream extends InputStream {
     }
 
     @Override
-    public synchronized int read(byte[] buf)throws IOException {
+    public int read(byte[] buf)throws IOException {
         return read(buf, 0, buf.length);
     }
 
     @Override
-    public synchronized int read(byte[] buf, int off, int len)throws IOException {
+    public int read(byte[] buf, int off, int len)throws IOException {
         if(!closed){
-            if(buffer.getLength() < 0){
+            if(buffer.getLength() < 1){
                 long now = System.currentTimeMillis();
                 while(buffer.getLength() < 1){
                     if(now+socket.getTimeout() <= System.currentTimeMillis()){
@@ -49,23 +49,23 @@ public class UDPInputStream extends InputStream {
     }
 
     @Override
-    public synchronized int available(){
+    public int available(){
         return buffer.getLength();
     }
 
-    public synchronized void append(byte[] buf){
+    public void append(byte[] buf){
         append(buf);
     }
 
-    public synchronized void append(byte[] buf, int off, int len){
+    public void append(byte[] buf, int off, int len){
         buffer.put(buf, off, len);
     }
 
-    public synchronized boolean isClosed(){
+    public boolean isClosed(){
         return closed;
     }
 
-    public synchronized void close(){
+    public void close(){
         closed = true;
     }
 }

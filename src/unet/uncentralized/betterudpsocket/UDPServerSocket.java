@@ -1,23 +1,22 @@
 package unet.uncentralized.betterudpsocket;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class UDPServerSocket {
 
-    private int port;
     private DatagramSocket server;
     private ArrayList<UDPListener> listeners = new ArrayList<>();
     private HashMap<String, UDPSocket> sockets = new HashMap<>();
+    private Timer timer;
+    private TimerTask task;
     private boolean safeMode;
 
     public UDPServerSocket(int port)throws SocketException {
-        this.port = port;
         server = new DatagramSocket(port);
 
         new Thread(new Runnable(){
@@ -40,7 +39,7 @@ public class UDPServerSocket {
 
                         }else{
                             UDPSocket socket = create(key);
-                            sockets.get(key.hash()).receive(packet.getData(), packet.getOffset()+4, packet.getLength()-4);
+                            socket.receive(packet.getData(), packet.getOffset()+4, packet.getLength()-4);
 
                             if(listeners.size() > 0){
                                 for(UDPListener listener : listeners){
@@ -54,6 +53,27 @@ public class UDPServerSocket {
                 }
             }
         }).start();
+
+        timer = new Timer();
+
+        task = new TimerTask(){
+            @Override
+            public void run(){
+                if(sockets.size() > 0){
+                    for(UDPSocket socket : sockets.values()){
+                        if(socket.isKeepAlive() && !socket.getOutputStream().isClosed()){
+                            try{
+                                sendKeepAlive(socket);
+                            }catch(IOException e){
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        timer.schedule(task, 0, 25000);
     }
 
     public void setSafeMode(boolean safeMode){
@@ -93,12 +113,28 @@ public class UDPServerSocket {
         return socket;
     }
 
+    private void sendKeepAlive(UDPSocket socket)throws IOException {
+        if(!socket.getOutputStream().isClosed()){
+            byte[] b = new byte[]{
+                    (byte) (0xff & (socket.getKey().getKey() >> 24)),
+                    (byte) (0xff & (socket.getKey().getKey() >> 16)),
+                    (byte) (0xff & (socket.getKey().getKey() >> 8)),
+                    (byte) (0xff & socket.getKey().getKey()),
+                    0x01
+            };
+            server.send(new DatagramPacket(b, b.length, socket.getAddress(), socket.getPort()));
+        }
+    }
+
     public DatagramSocket getServer(){
         return server;
     }
 
     public void close(){
         server.close();
+        task.cancel();
+        timer.cancel();
+        timer.purge();
     }
 
     public UDPListener addUDPListener(UDPListener listener){

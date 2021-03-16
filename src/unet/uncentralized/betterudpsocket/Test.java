@@ -6,6 +6,9 @@ import java.net.InetAddress;
 
 public class Test {
 
+    //AVERAGE NAT WILL SHUT OFF AT AROUND 30-60 SECONDS
+    //FOR KEEP ALIVE WE MUST SEND 0x03 EVERY 25 SECONDS
+
     public static void main(String[] args)throws Exception {
         UDPServerSocket server = new UDPServerSocket(8080);
         server.setSafeMode(true);
@@ -16,6 +19,7 @@ public class Test {
                     @Override
                     public void run(){
                         try{
+                            socket.setKeepAlive(true);
                             DataInputStream in = new DataInputStream(socket.getInputStream());
 
                             System.out.println(in.readByte());
@@ -37,22 +41,21 @@ public class Test {
             }
         });
 
-        //Thread.sleep(1000);
-
-
         UDPServerSocket socket = new UDPServerSocket(8081);
         socket.setSafeMode(true);
 
         UDPSocket s = socket.create(InetAddress.getByName("192.168.0.130"), 8080);
+        s.setKeepAlive(true);
+        s.setNoDelay(true);
         OutputStream o = s.getOutputStream();
         o.write(0xcc);
-        o.flush();
+        //o.flush();
 
         o.write("ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes());
-        o.flush();
+        //o.flush();
 
         o.write(0xcc);
-        o.flush();
+        //o.flush();
 
         s.close();
 
