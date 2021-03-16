@@ -31,7 +31,7 @@ server.addUDPListener(new UDPServerSocket.UDPListener(){
 }
 ```
 
-**Closing server socket & sockets**
+**Closing server server & sockets**
 ```Java
 server.close(); //CLOSES THE SERVER
 socket.close(); //CLOSE THE SOCKET - WONT CLOSE THE SERVER
