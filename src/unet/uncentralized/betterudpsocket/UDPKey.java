@@ -1,16 +1,24 @@
 package unet.uncentralized.betterudpsocket;
 
 import java.net.InetAddress;
+import java.util.UUID;
 
 public class UDPKey {
 
+    private UUID uuid;
     private InetAddress address;
-    private int port, key;
+    private int port;
 
-    public UDPKey(int key, InetAddress address, int port){
+    public UDPKey(UUID uuid, InetAddress address, int port){
         this.address = address;
         this.port = port;
-        this.key = key;
+        this.uuid = uuid;
+    }
+
+    public UDPKey(InetAddress address, int port){
+        uuid = UUID.randomUUID();
+        this.address = address;
+        this.port = port;
     }
 
     public InetAddress getAddress(){
@@ -21,16 +29,16 @@ public class UDPKey {
         return port;
     }
 
-    public int getKey(){
-        return key;
+    public UUID getUUID(){
+        return uuid;
     }
 
-    public void setKey(int key){
-        this.key = key;
+    public void setUUID(UUID key){
+        this.uuid = key;
     }
 
     public String hash(){
-        return key+":"+address.getHostAddress()+":"+port;
+        return uuid.toString()+":"+address.getHostAddress()+":"+port;
     }
 
     public boolean equals(Object o){

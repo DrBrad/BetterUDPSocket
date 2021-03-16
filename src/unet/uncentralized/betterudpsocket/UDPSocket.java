@@ -123,24 +123,42 @@ public abstract class UDPSocket {
                 case 0x03: //FAILURE ACKNOWLEDGMENT
                     send(lastPacket);
                     break;
+
+                case 0x05: //PEER CLOSED
+                    peerClosed();
+                    break;
             }
         }
     }
 
     public void send(DatagramPacket packet)throws IOException {
-        if(!out.isClosed()){
+        if(!out.isClosed() && !isClosed()){
             lastPacket = packet;
             server.getServer().send(packet);
         }
     }
 
     private void sendSuccessAcknowledgment()throws IOException {
-        if(!out.isClosed()){
+        if(!out.isClosed() && !isClosed()){
             byte[] b = new byte[]{
-                    (byte) (0xff & (key.getKey() >> 24)),
-                    (byte) (0xff & (key.getKey() >> 16)),
-                    (byte) (0xff & (key.getKey() >> 8)),
-                    (byte) (0xff & key.getKey()),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 56)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 48)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 40)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 32)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 24)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 16)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >>  8)),
+                    (byte) (0xff & key.getUUID().getMostSignificantBits()),
+
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 56)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 48)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 40)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 32)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 24)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 16)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >>  8)),
+                    (byte) (0xff & key.getUUID().getLeastSignificantBits()),
+
                     0x02
             };
             server.getServer().send(new DatagramPacket(b, b.length, key.getAddress(), key.getPort()));
@@ -148,29 +166,74 @@ public abstract class UDPSocket {
     }
 
     private void sendFailureAcknowledgment()throws IOException {
-        if(!out.isClosed()){
+        if(!out.isClosed() && !isClosed()){
             byte[] b = new byte[]{
-                    (byte) (0xff & (key.getKey() >> 24)),
-                    (byte) (0xff & (key.getKey() >> 16)),
-                    (byte) (0xff & (key.getKey() >> 8)),
-                    (byte) (0xff & key.getKey()),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 56)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 48)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 40)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 32)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 24)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 16)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >>  8)),
+                    (byte) (0xff & key.getUUID().getMostSignificantBits()),
+
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 56)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 48)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 40)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 32)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 24)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 16)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >>  8)),
+                    (byte) (0xff & key.getUUID().getLeastSignificantBits()),
+
                     0x03
             };
             server.getServer().send(new DatagramPacket(b, b.length, key.getAddress(), key.getPort()));
         }
     }
 
+    public void sendPunch()throws IOException {
+        if(!out.isClosed() && !isClosed()){
+            byte[] b = new byte[]{
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 56)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 48)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 40)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 32)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 24)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >> 16)),
+                    (byte) (0xff & (key.getUUID().getMostSignificantBits() >>  8)),
+                    (byte) (0xff & key.getUUID().getMostSignificantBits()),
+
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 56)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 48)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 40)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 32)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 24)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >> 16)),
+                    (byte) (0xff & (key.getUUID().getLeastSignificantBits() >>  8)),
+                    (byte) (0xff & key.getUUID().getLeastSignificantBits()),
+
+                    0x01
+            };
+            server.getServer().send(new DatagramPacket(b, b.length, key.getAddress(), key.getPort()));
+        }
+    }
+
     public void shutdownInputStream()throws IOException {
-        if(!in.isClosed()){
+        if(!in.isClosed() && !isClosed()){
             in.close();
         }
     }
 
     public void shutdownOutputStream()throws IOException {
-        if(!in.isClosed()){
+        if(!in.isClosed() && !isClosed()){
             out.close();
         }
     }
 
+    public abstract boolean isClosed();
+
     public abstract void close();
+
+    abstract void peerClosed();
 }

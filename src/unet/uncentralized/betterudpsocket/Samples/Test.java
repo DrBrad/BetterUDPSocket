@@ -1,4 +1,7 @@
-package unet.uncentralized.betterudpsocket;
+package unet.uncentralized.betterudpsocket.Samples;
+
+import unet.uncentralized.betterudpsocket.UDPServerSocket;
+import unet.uncentralized.betterudpsocket.UDPSocket;
 
 import java.io.DataInputStream;
 import java.io.OutputStream;
@@ -41,10 +44,10 @@ public class Test {
             }
         });
 
-        UDPServerSocket socket = new UDPServerSocket(8081);
+        UDPServerSocket socket = new UDPServerSocket();
         socket.setSafeMode(true);
 
-        UDPSocket s = socket.create(InetAddress.getByName("192.168.0.130"), 8080);
+        UDPSocket s = socket.create(InetAddress.getByName("192.168.0.132"), 8080);
         s.setKeepAlive(true);
         s.setNoDelay(true);
         OutputStream o = s.getOutputStream();
@@ -57,9 +60,10 @@ public class Test {
         o.write(0xcc);
         //o.flush();
 
-        s.close();
 
         Thread.sleep(1000);
+
+        s.close();
 
         socket.close();
         server.close();

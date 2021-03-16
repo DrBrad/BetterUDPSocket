@@ -30,13 +30,17 @@ public class UDPInputStream extends InputStream {
 
     @Override
     public int read(byte[] buf, int off, int len)throws IOException {
-        if(!closed){
+        if(!closed && !socket.isClosed()){
             if(buffer.getLength() < 1){
                 long now = System.currentTimeMillis();
                 while(buffer.getLength() < 1){
                     if(now+socket.getTimeout() <= System.currentTimeMillis()){
                         return 0;
                     }
+                }
+
+                if(closed || socket.isClosed()){
+                    throw new IOException("InputStream is closed.");
                 }
             }
 

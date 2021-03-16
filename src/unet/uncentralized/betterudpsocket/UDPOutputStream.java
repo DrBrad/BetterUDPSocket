@@ -29,7 +29,7 @@ public class UDPOutputStream extends OutputStream {
 
     @Override
     public void write(byte[] buf, int off, int len)throws IOException {
-        if(!closed){
+        if(!closed && !socket.isClosed()){
             if(socket.isNoDelay()){
                 buffer.put(buf, off, len);
                 flush();
@@ -54,12 +54,26 @@ public class UDPOutputStream extends OutputStream {
     }
 
     private void writeKey()throws IOException {
-        if(!closed){
+        if(!closed && !socket.isClosed()){
             buffer.put(new byte[]{
-                    (byte) (0xff & (socket.getKey().getKey() >> 24)),
-                    (byte) (0xff & (socket.getKey().getKey() >> 16)),
-                    (byte) (0xff & (socket.getKey().getKey() >> 8)),
-                    (byte) (0xff & socket.getKey().getKey()),
+                    (byte) (0xff & (socket.getKey().getUUID().getMostSignificantBits() >> 56)),
+                    (byte) (0xff & (socket.getKey().getUUID().getMostSignificantBits() >> 48)),
+                    (byte) (0xff & (socket.getKey().getUUID().getMostSignificantBits() >> 40)),
+                    (byte) (0xff & (socket.getKey().getUUID().getMostSignificantBits() >> 32)),
+                    (byte) (0xff & (socket.getKey().getUUID().getMostSignificantBits() >> 24)),
+                    (byte) (0xff & (socket.getKey().getUUID().getMostSignificantBits() >> 16)),
+                    (byte) (0xff & (socket.getKey().getUUID().getMostSignificantBits() >>  8)),
+                    (byte) (0xff & socket.getKey().getUUID().getMostSignificantBits()),
+
+                    (byte) (0xff & (socket.getKey().getUUID().getLeastSignificantBits() >> 56)),
+                    (byte) (0xff & (socket.getKey().getUUID().getLeastSignificantBits() >> 48)),
+                    (byte) (0xff & (socket.getKey().getUUID().getLeastSignificantBits() >> 40)),
+                    (byte) (0xff & (socket.getKey().getUUID().getLeastSignificantBits() >> 32)),
+                    (byte) (0xff & (socket.getKey().getUUID().getLeastSignificantBits() >> 24)),
+                    (byte) (0xff & (socket.getKey().getUUID().getLeastSignificantBits() >> 16)),
+                    (byte) (0xff & (socket.getKey().getUUID().getLeastSignificantBits() >>  8)),
+                    (byte) (0xff & socket.getKey().getUUID().getLeastSignificantBits()),
+
                     0x00
             });
 
@@ -71,10 +85,7 @@ public class UDPOutputStream extends OutputStream {
                         (byte) (0xff & order)
                 });
                 order++;
-
             }
-        }else{
-            throw new IOException("OutputStream is closed.");
         }
     }
 
@@ -84,7 +95,7 @@ public class UDPOutputStream extends OutputStream {
 
     @Override
     public void flush()throws IOException {
-        if(buffer.getLength() > 4){
+        if(buffer.getLength() > 17){
             if(socket.isSafeMode()){
                 long now = System.currentTimeMillis();
                 while(!ackReady){
@@ -94,6 +105,10 @@ public class UDPOutputStream extends OutputStream {
                     }
                 }
                 ackReady = false;
+
+                if(closed && socket.isClosed()){
+                    throw new IOException("OutputStream is closed.");
+                }
             }
 
             byte[] b = new byte[buffer.getLength()];
