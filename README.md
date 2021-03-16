@@ -44,6 +44,25 @@ This will ensure all packets arrive at the destination in order.
 server.setSafeMode(true);
 ```
 
+**Set KeepAlive**
+
+NAT will typically close your port after nothing has been sent or received for 30-60 seconds. Enabling KeepAlive will send a packet for KeepAlive every 25 seconds to ensure the port stays open. If you are using this for P2P where both peers haven't port forwarded only one peer will need to do KeepAlive.
+```Java
+server.setKeepAlive(true);
+```
+
+**Set NoDelay - ACK**
+
+This will send a packet everytime you write to the output stream, there is no need to flush.
+```Java
+server.setNoDelay(true);
+```
+
+UDP HolePunching
+-----
+An example for hole punching with this project can be found: (https://github.com/DrBrad/BetterUDPSocket/blob/main/src/unet/uncentralized/betterudpsocket/Test.java)
+If you use hole punching the server must be port forwarded while both clients don't have to be. Both clients will then be able to communicate directly without any server relay. This will only work with Non Symmetric NATs.
+
 
 License
 -----------
