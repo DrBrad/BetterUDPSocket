@@ -36,13 +36,9 @@ public class UDPServerSocket {
                         DatagramPacket packet = new DatagramPacket(new byte[65535], 65535);
                         server.receive(packet);
 
-                        //WE NEED TO RUN THE TASKS IN AN ORDER...
-                        //new PacketHandler(packet).start();
                         if(packet != null){
                             packetPool.offer(packet);
                         }
-                        //System.out.println(packetPool.size());
-
                     }catch(IOException e){
                     }
                 }
@@ -132,6 +128,9 @@ public class UDPServerSocket {
 
             @Override
             public boolean isClosed(){
+                if(server.isClosed()){
+                    return true;
+                }
                 return closed;
             }
 
@@ -271,20 +270,5 @@ public class UDPServerSocket {
     public interface UDPListener {
 
         void accept(UDPSocket socket);
-    }
-
-    private class PacketHandler extends Thread {
-
-        private DatagramPacket packet;
-
-        public PacketHandler(DatagramPacket packet){
-            this.packet = packet;
-        }
-
-        @Override
-        public void run(){
-
-        }
-
     }
 }
