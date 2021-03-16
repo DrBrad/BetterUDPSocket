@@ -1,5 +1,7 @@
 package unet.uncentralized.betterudpsocket;
 
+import unet.uncentralized.betterudpsocket.UPnP.UPnP;
+
 import java.io.IOException;
 import java.net.*;
 import java.util.*;
@@ -165,6 +167,33 @@ public class UDPServerSocket {
 
         sockets.put(key.hash(), socket);
         return socket;
+    }
+
+    public boolean openPort(){
+        if(UPnP.isUPnPAvailable()){
+            if(UPnP.isMappedUDP(server.getLocalPort())){
+                UPnP.openPortUDP(server.getLocalPort());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean closePort(){
+        if(UPnP.isUPnPAvailable()){
+            if(UPnP.isMappedUDP(server.getLocalPort())){
+                UPnP.closePortUDP(server.getLocalPort());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public InetAddress getExternalIP(){
+        if(UPnP.isUPnPAvailable()){
+            return UPnP.getExternalIP();
+        }
+        return null;
     }
 
     public int getPort(){

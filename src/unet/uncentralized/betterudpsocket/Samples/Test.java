@@ -9,9 +9,6 @@ import java.net.InetAddress;
 
 public class Test {
 
-    //AVERAGE NAT WILL SHUT OFF AT AROUND 30-60 SECONDS
-    //FOR KEEP ALIVE WE MUST SEND 0x03 EVERY 25 SECONDS
-
     public static void main(String[] args)throws Exception {
         UDPServerSocket server = new UDPServerSocket(8080);
         server.setSafeMode(true);
