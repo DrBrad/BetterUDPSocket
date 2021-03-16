@@ -62,13 +62,13 @@ public class UDPServerSocket {
                                     ((long)(packet.getData()[packet.getOffset()+7] & 0xff)),
 
                                     (((long)(packet.getData()[packet.getOffset()+8] & 0xff) << 56) |
-                                            ((long)(packet.getData()[packet.getOffset()+9] & 0xff) << 48) |
-                                            ((long)(packet.getData()[packet.getOffset()+10] & 0xff) << 40) |
-                                            ((long)(packet.getData()[packet.getOffset()+11] & 0xff) << 32) |
-                                            ((long)(packet.getData()[packet.getOffset()+12] & 0xff) << 24) |
-                                            ((long)(packet.getData()[packet.getOffset()+13] & 0xff) << 16) |
-                                            ((long)(packet.getData()[packet.getOffset()+14] & 0xff) <<  8) |
-                                            ((long)(packet.getData()[packet.getOffset()+15] & 0xff))));
+                                    ((long)(packet.getData()[packet.getOffset()+9] & 0xff) << 48) |
+                                    ((long)(packet.getData()[packet.getOffset()+10] & 0xff) << 40) |
+                                    ((long)(packet.getData()[packet.getOffset()+11] & 0xff) << 32) |
+                                    ((long)(packet.getData()[packet.getOffset()+12] & 0xff) << 24) |
+                                    ((long)(packet.getData()[packet.getOffset()+13] & 0xff) << 16) |
+                                    ((long)(packet.getData()[packet.getOffset()+14] & 0xff) <<  8) |
+                                    ((long)(packet.getData()[packet.getOffset()+15] & 0xff))));
 
                             UDPKey key = new UDPKey(uuid, packet.getAddress(), packet.getPort());
 
