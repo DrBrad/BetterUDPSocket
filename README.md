@@ -69,10 +69,17 @@ server.getExternalIP();
 
 UDP HolePunching
 -----
+![UDP Hole-Punch Image](https://raw.githubusercontent.com/DrBrad/BetterUDPSocket/main/hole_punch.png)
+
 An example for hole punching with this project can be found:
 (https://github.com/DrBrad/BetterUDPSocket/blob/main/src/unet/uncentralized/betterudpsocket/Samples/HolePunchServer.java)
 (https://github.com/DrBrad/BetterUDPSocket/blob/main/src/unet/uncentralized/betterudpsocket/Samples/HolePunchClient.java)
 If you use hole punching the server must be port forwarded while both clients don't have to be. Both clients will then be able to communicate directly without any server relay. This will only work with Non Symmetric NATs.
+
+UDP File Transfer
+-----
+An example for file transfer with I/O with this project can be found:
+(https://github.com/DrBrad/BetterUDPSocket/blob/main/src/unet/uncentralized/betterudpsocket/Samples/FileTransfer.java)
 
 
 License
