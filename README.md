@@ -39,7 +39,7 @@ socket.close(); //CLOSE THE SOCKET - WONT CLOSE THE SERVER
 
 **Set SafeMode - ACK**
 
-This will ensure all packets arrive at the destination in order.
+This will ensure all packets arrive at the destination in order with acknowledgment.
 ```Java
 server.setSafeMode(true);
 ```
