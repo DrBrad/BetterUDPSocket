@@ -38,7 +38,7 @@ public class UDPKey {
     }
 
     public String hash(){
-        return uuid.toString()+":"+address.getHostAddress()+":"+port;
+        return uuid.toString()/*+":"+address.getHostAddress()+":"+port*/;
     }
 
     public boolean equals(Object o){

@@ -8,7 +8,7 @@ public class UDPOutputStream extends OutputStream {
 
     private UDPSocket socket;
     private int order = 0;
-    private ByteBuffer buffer = new ByteBuffer(65535);
+    private ByteBuffer buffer = new ByteBuffer(65507);
     private boolean closed, ackReady = true;
 
     public UDPOutputStream(UDPSocket socket)throws IOException {
@@ -36,13 +36,13 @@ public class UDPOutputStream extends OutputStream {
 
             }else{
                 if(buffer.getLength()+len >= buffer.getCapacity()){
-                    while(len > buffer.getRemaining()){
-                        buffer.put(buf, off, buffer.getRemaining());
+                    while(len > 0){
+                        int rem = (buffer.getRemaining() < len) ? buffer.getRemaining() : len;
+                        buffer.put(buf, off, rem);
+                        off += rem;
+                        len -= rem;
                         flush();
-                        off += buffer.getRemaining();
-                        len -= buffer.getRemaining();
                     }
-
                 }else{
                     buffer.put(buf, off, len);
                 }

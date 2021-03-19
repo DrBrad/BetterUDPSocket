@@ -37,8 +37,9 @@ public class ByteBuffer {
         len = (len > length) ? length : len;
         System.arraycopy(buffer, off, buf, 0, len);
 
+        //I SEE THE POTENTIAL ISSUE...
         byte[] result = new byte[capacity];
-        System.arraycopy(buffer, (off+len), result, 0, length);
+        System.arraycopy(buffer, off+len, result, 0, length-len);
         buffer = result;
 
         length -= off+len;

@@ -101,6 +101,7 @@ public abstract class UDPSocket {
                                 (buf[off+4] & 0xff));
 
                         if(inOrder == pos){
+                            //while(!in.isAckReady()){ }
                             in.append(buf, off+5, len-5);
                             inOrder++;
                             sendSuccessAcknowledgment();

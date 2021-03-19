@@ -29,7 +29,6 @@ public class HolePunchClient {
                                 int l = in.read(b);
                                 System.out.println(new String(b, 0, l));
                             }catch(IOException e){
-                                e.printStackTrace();
                             }
                         }
                     }

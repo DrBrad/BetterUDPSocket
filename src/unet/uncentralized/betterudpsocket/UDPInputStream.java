@@ -6,7 +6,7 @@ import java.io.InputStream;
 public class UDPInputStream extends InputStream {
 
     private UDPSocket socket;
-    private ByteBuffer buffer = new ByteBuffer(65535);
+    private ByteBuffer buffer = new ByteBuffer(131014); //65507
     private boolean closed;
 
     public UDPInputStream(UDPSocket socket){
@@ -35,7 +35,7 @@ public class UDPInputStream extends InputStream {
                 long now = System.currentTimeMillis();
                 while(buffer.getLength() < 1){
                     if(now+socket.getTimeout() <= System.currentTimeMillis()){
-                        return 0;
+                        return -1;
                     }
                 }
 
@@ -44,9 +44,7 @@ public class UDPInputStream extends InputStream {
                 }
             }
 
-            buffer.get(buf, off, len);
-
-            return len;
+            return buffer.get(buf, off, len);
         }else{
             throw new IOException("InputStream is closed.");
         }
@@ -62,6 +60,13 @@ public class UDPInputStream extends InputStream {
     }
 
     public void append(byte[] buf, int off, int len){
+        long now = System.currentTimeMillis();
+        while(buffer.getRemaining() < len){
+            if(now+(socket.getTimeout()) <= System.currentTimeMillis()){
+                socket.close();
+            }
+        }
+
         buffer.put(buf, off, len);
     }
 
