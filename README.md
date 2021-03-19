@@ -7,7 +7,7 @@ As you may know DatagramSocket's don't have continuous I/O. I have made some cus
 
 Usage
 -----
-An example of this project can be found: (https://github.com/DrBrad/BetterUDPSocket/blob/main/src/unet/uncentralized/betterudpsocket/Test.java)
+An example of this project can be found: (https://github.com/DrBrad/BetterUDPSocket/blob/main/src/unet/uncentralized/betterudpsocket/Samples/Test.java)
 
 **Creating a server socket**
 ```Java
